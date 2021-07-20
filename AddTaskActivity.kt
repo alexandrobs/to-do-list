@@ -1,5 +1,6 @@
 package com.example.todolist.ui
 
+import android.app.Activity
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
@@ -24,6 +25,15 @@ class AddTaskActivity : AppCompatActivity () {
         binding = ActivityAddTaskBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        if(intent.hasExtra(TASK_ID)){
+            val intExtra = intent.getIntExtra(TASK_ID, 0)
+            TaskDataSource.findById(intExtra)?.let {
+                binding.tilTitle.text = it.title
+                binding.tilDate.text = it.date
+                binding.tilHour.text = it.hour
+            }
+        }
+
         insertListeners()
     }
 
@@ -34,9 +44,6 @@ class AddTaskActivity : AppCompatActivity () {
             datePicker.addOnPositiveButtonClickListener {
                 val default = TimeZone.getDefault()
                 val offset = default.getOffset(Date().time) * -1
-                //posso fazer assim o setText
-                //binding.tilDate.editText?.setText(Date(it).format())
-                //ou assim
                 binding.tilDate.text = Date(it + offset).format()
             }
             datePicker.show(supportFragmentManager, "DATE_PICK_TAG")
@@ -50,24 +57,30 @@ class AddTaskActivity : AppCompatActivity () {
             timePicker.addOnPositiveButtonClickListener {
                 val hour = if(timePicker.hour in 0..9) "0${timePicker.hour}" else timePicker.hour
                 val minute = if(timePicker.minute in 0..9) "0${timePicker.minute}" else timePicker.minute
-                //assim tava bugando horas e minutos que começavam com 0, entao mudamos para o de cima
-                //binding.tilHour.text = "${timePicker.hour}:${timePicker.minute}"
                 binding.tilHour.text = "$hour:$minute"
             }
             timePicker.show(supportFragmentManager, "TIMER_PICK_TAG")
         }
 
-        binding.mbCancelTask.setOnClickListener {  }
+        binding.mbCancelTask.setOnClickListener {
+            finish()
+        }
 
         binding.mbCreateTask.setOnClickListener {
             val task = Task(
                 title = binding.tilTitle.text,
                 date = binding.tilDate.text,
-                hour = binding.tilHour.text
+                hour = binding.tilHour.text,
+                id = intent.getIntExtra(TASK_ID, 0)
             )
             TaskDataSource.insertTask(task)
-            Log.e("AddTaskActivity","insertListeners" + TaskDataSource.getList())
+            setResult(Activity.RESULT_OK)
+            finish()
         }
+    }
+
+    companion object {
+        const val TASK_ID = "task_id"
     }
 
 }
